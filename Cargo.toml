@@ -1,0 +1,17 @@
+[package]
+name = "amogus"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+tokio = { version = "1.21.2", features = ["macros", "rt-multi-thread", "parking_lot"] }
+sqlx = { version = "0.6", features = [ "runtime-tokio-rustls", "sqlite", "migrate" ] }
+redis = { version = "0.23.0", features = ["tokio-comp", "aio", "connection-manager"]  }
+chrono = "0.4.24"
+rand = "0.8.5"
+
+[dependencies.serenity]
+default-features = false
+features = ["builder", "model", "client", "gateway", "http", "rustls_backend"]
+version = "0.11"
