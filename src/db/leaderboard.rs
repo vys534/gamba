@@ -12,7 +12,7 @@ pub enum LeaderboardType {
 
 impl LeaderboardType {
     fn to_str(&self) -> &str {
-        match *self {
+        match self {
             LeaderboardType::CurrencyBest => "currency_best",
             LeaderboardType::CurrencyHeld => "currency_held",
             LeaderboardType::StreakBest => "daily_streak_best",

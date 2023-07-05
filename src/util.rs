@@ -90,18 +90,24 @@ pub fn format_lb_entry(
     is_self: bool,
 ) -> String {
     format!(
-        "{} | {}#{} - {}",
+        "{} | {} - {}",
         if is_self {
             format!("You (#{})", position)
         } else {
             format!("`#{}`", position)
         },
-        &row.user_name,
-        &row.discriminator,
+        format_username(&row.user_name, row.discriminator),
         match t {
             LeaderboardType::CurrencyBest | LeaderboardType::CurrencyHeld =>
                 format_currency(row.value),
             LeaderboardType::StreakBest => format_streak(row.value),
         }
     )
+}
+
+pub fn format_username(name: &str, discriminator: u16) -> String {
+    if discriminator == 0 {
+        return name.to_string();
+    }
+    format!("{}#{}", name, discriminator)
 }

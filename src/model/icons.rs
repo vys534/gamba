@@ -14,7 +14,7 @@ pub enum Icon {
 
 impl Icon {
     pub fn emoji(&self) -> Emoji {
-        match *self {
+        match self {
             Icon::Moosh => Emoji::Moosh,
             Icon::Fabio => Emoji::Fabio,
             Icon::Reaper => Emoji::Reaper,
@@ -27,7 +27,7 @@ impl Icon {
         }
     }
     pub fn name(&self) -> &'static str {
-        match *self {
+        match self {
             Icon::Moosh => "Moosh",
             Icon::Fabio => "Fabio",
             Icon::Reaper => "Reaper",
@@ -41,7 +41,7 @@ impl Icon {
     }
     // .0 = individual value, .1 = match 3
     pub fn match_data(&self) -> (f64, f64) {
-        match *self {
+        match self {
             Icon::Moosh => (0.0, 0.0),
             Icon::Fabio => (0.1, 0.5),
             Icon::Reaper => (0.2, 1.0),

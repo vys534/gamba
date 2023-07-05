@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::db::currency::adjust_currency_amount;
 use crate::db::currency::get_current;
 use crate::model::command;
-use rand::Rng;
+use rand::RngCore;
 use serenity;
 use sqlx::Sqlite;
 
@@ -156,60 +156,55 @@ impl command::Command for GambleCommand {
         self.check_cooldown(redis_conn, &message.author.id).await?;
         let user_credits = get_current(&message.author.id, &mut db_conn).await?;
 
-        let mut amount_to_gamble: i64 = if !args.0.is_empty() {
-            if args.0[0] == "all" {
-                user_credits
-            } else {
-                let suffix: char = args.0[0].chars().last().unwrap();
-                let (multiplier, has_suffix) = match suffix {
-                    'k' => (1000, true),
-                    'm' => (1_000_000, true),
-                    _ => (1, false),
-                };
-                let value = args.0[0]
-                    .chars()
-                    .take(args.0[0].len() - if has_suffix { 1 } else { 0 })
-                    .collect::<String>();
-                str::parse::<i64>(&value)
-                    .map_err(|_e: std::num::ParseIntError| crate::model::error::Error::ParseInt)?
-                    * multiplier
-            }
-        } else {
-            DEFAULT_AMOUNT
-        };
-        if amount_to_gamble < DEFAULT_AMOUNT {
-            amount_to_gamble = DEFAULT_AMOUNT;
-        }
-        if amount_to_gamble > MAX_AMOUNT {
-            amount_to_gamble = MAX_AMOUNT;
-        }
+        let amount_to_gamble: i64 = args
+            .0
+            .get(0)
+            .map(|&arg| match arg {
+                "all" => user_credits,
+                _ => {
+                    let suffix = arg.chars().last().unwrap_or('\0');
+                    let (multiplier, has_suffix) = match suffix {
+                        'k' => (1000, true),
+                        'm' => (1_000_000, true),
+                        _ => (1, false),
+                    };
+                    let value = &arg[..arg.len() - has_suffix as usize];
+                    value
+                        .parse::<i64>()
+                        .map(|value| value * multiplier)
+                        .unwrap_or_else(|_| DEFAULT_AMOUNT)
+                }
+            })
+            .unwrap_or(DEFAULT_AMOUNT)
+            .min(MAX_AMOUNT);
+
         if user_credits < amount_to_gamble {
             return Err(crate::model::error::Error::Broke(
                 amount_to_gamble - user_credits,
             ));
         }
-        let mut wheels: Vec<Vec<&crate::model::icons::Icon>> = Vec::new();
-        for item in &GAMBLE_WHEELS {
-            let mut wheel: Vec<&crate::model::icons::Icon> = Vec::new();
-            let pos = rand::thread_rng().gen_range(0..item.len());
-            for j in 0..5 {
-                let pos_offset = pos + j;
-                wheel.push(
-                    &item[if pos_offset > item.len() - 1 {
-                        pos_offset % (item.len() - 1)
-                    } else {
-                        pos_offset
-                    }],
-                )
-            }
-            wheels.push(wheel);
-        }
+
+        let mut rng = rand::rngs::OsRng;
+
+        let wheels: Vec<Vec<&crate::model::icons::Icon>> = GAMBLE_WHEELS
+            .iter()
+            .map(|item| {
+                let pos = rng.next_u32() as usize % item.len();
+                item.iter()
+                    .cycle()
+                    .skip(pos)
+                    .take(5)
+                    .collect::<Vec<&crate::model::icons::Icon>>()
+            })
+            .collect();
 
         let payout_row = [wheels[0][2], wheels[1][2], wheels[2][2]];
+
         let mut payout_multiplier = 0.0;
         let mut payout_information: Vec<String> = Vec::new();
         let mut dollar_event = false;
         let mut spencer_event = false;
+
         if payout_row
             .iter()
             .all(|&item| item.name() == payout_row[0].name())
@@ -232,32 +227,35 @@ impl command::Command for GambleCommand {
                         payout_row[0].match_data().1
                     )
                 }
-            })
+            });
         }
 
         if !dollar_event && !spencer_event {
             for p in payout_row {
                 payout_multiplier += p.match_data().0;
-                payout_information.push(format!("{}: {}x", p.name(), p.match_data().0))
+                payout_information.push(format!("{}: {}x", p.name(), p.match_data().0));
             }
         }
 
-        let mut casino_display: Vec<String> = Vec::new();
-        for i in 0..5 {
-            casino_display.push(format!(
-                "{}{}{}",
-                if i == 2 { "`>`" } else { "` `" },
-                [wheels[0][i], wheels[1][i], wheels[2][i]]
-                    .iter()
-                    .map(|ic| ic.emoji().to_string())
-                    .collect::<Vec<&str>>()
-                    .join(""),
-                if i == 2 { "`<`" } else { "` `" }
-            ));
-        }
+        let casino_display: Vec<String> = (0..5)
+            .map(|i| {
+                format!(
+                    "{}{}{}",
+                    if i == 2 { "`>`" } else { "` `" },
+                    wheels
+                        .iter()
+                        .map(|wheel| wheel[i].emoji().to_string())
+                        .collect::<Vec<String>>()
+                        .concat(),
+                    if i == 2 { "`<`" } else { "` `" }
+                )
+            })
+            .collect();
 
-        let original_payout = ((amount_to_gamble as f64) * payout_multiplier) as i64;
-        if spencer_event {
+        let original_payout = (amount_to_gamble as f64 * payout_multiplier) as i64;
+        let payout = if dollar_event {
+            1
+        } else if spencer_event {
             adjust_currency_amount(SPENCER_ID, original_payout, &mut db_conn).await?;
             crate::db::log::log_currency_change(
                 SPENCER_ID,
@@ -267,10 +265,6 @@ impl command::Command for GambleCommand {
                 &mut db_conn,
             )
             .await?;
-        }
-        let payout = if dollar_event {
-            1
-        } else if spencer_event {
             0
         } else {
             original_payout
@@ -289,16 +283,13 @@ impl command::Command for GambleCommand {
 
         let new_balance = get_current(&message.author.id, &mut db_conn).await?;
         let modifier = if dollar_event {
-            crate::model::emoji::Emoji::TheDollar
-                .to_string()
-                .to_string()
+            crate::model::emoji::Emoji::TheDollar.to_string()
         } else if spencer_event {
-            crate::model::emoji::Emoji::WhatsappSpencer
-                .to_string()
-                .to_string()
+            crate::model::emoji::Emoji::WhatsappSpencer.to_string()
         } else {
             format!("x{:.2}", payout_multiplier)
         };
+
         let final_str = format!(
             "<@{}>\n{}\n---\n{}\n{} in >> {} >> {} | You {} __{}__ (now at {})",
             &message.author.id.0,

@@ -12,27 +12,37 @@ const OWNER_ID: u64 = 0;
 
 #[tokio::main]
 async fn main() {
+    println!("Starting Gamba bot...");
+
     let token = std::env::var("DISCORD_TOKEN").expect("no token found");
     let intents = GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::DIRECT_MESSAGES
         | GatewayIntents::MESSAGE_CONTENT;
 
-    let database = sqlx::sqlite::SqlitePoolOptions::new()
+    let mut database = sqlx::sqlite::SqlitePoolOptions::new()
         .max_connections(5)
         .connect_with(
             sqlx::sqlite::SqliteConnectOptions::new()
-                .filename("data.sqlite")
+                .filename("./db/data.sqlite")
                 .create_if_missing(true),
         )
         .await
         .expect("Error connecting to sqlite database");
 
-    let redis_client =
-        redis::Client::open("redis://127.0.0.1:6379/").expect("Error opening Redis connection");
+    println!("Connected to sqlite database");
+
+    crate::db::setup(&mut database)
+        .await
+        .expect("Error setting up sqlite database");
+
+    let redis_client = redis::Client::open(std::env::var("REDIS_URI").expect("no redis uri found"))
+        .expect("Error opening Redis connection");
     let conn = redis_client
         .get_tokio_connection_manager()
         .await
         .expect("Error getting Redis connection manager");
+
+    println!("Connected to Redis");
 
     let handler = crate::handler::Handler {
         db: database,
@@ -44,6 +54,7 @@ async fn main() {
         .await
         .expect("Err creating client");
 
+    println!("Creating client, handing off to serenity");
     if let Err(e) = client.start().await {
         println!("Client error: {}", e)
     }
