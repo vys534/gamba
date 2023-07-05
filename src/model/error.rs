@@ -1,5 +1,6 @@
 use crate::util::format_currency;
 
+#[derive(Debug)]
 pub enum Error {
     Redis(redis::RedisError),
     Db(sqlx::Error),
