@@ -10,7 +10,7 @@ pub struct Info {
 
 impl Class {
     pub fn info(&self) -> Info {
-        match *self {
+        match self {
             Class::Core => Info {
                 name: "Core",
                 description: "Core commands"
