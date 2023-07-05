@@ -13,9 +13,9 @@ pub enum Emoji {
     PackOLantern,
 }
 
-impl Emoji {
-    pub fn to_string(&self) -> &'static str {
-        match *self {
+impl std::fmt::Display for Emoji {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
             Emoji::Cp => "<:points:1098027068152873092>",
             Emoji::EpicFail => "<:fail:1098060687101673552>",
             Emoji::Moosh => "<:moosher:1098433526141046825>",
@@ -28,6 +28,7 @@ impl Emoji {
             Emoji::Fire => ":fire:",
             Emoji::TheDollar => ":dollar:",
             Emoji::PackOLantern => "<:packolantern:1110735361644183643>",
-        }
+        };
+        write!(f, "{}", s)
     }
 }
