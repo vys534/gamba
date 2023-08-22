@@ -8,6 +8,8 @@ Features:
 - Leaderboard
 - Daily claim (and bonus for consecutive logins)
 
-To build, you need the sqlx CLI to run migrations.
+Before using it, make sure to replace the emojis in `src/model/emoji.rs` with your own emoji.
 
-Not recommended for use on multiple servers (you can uncheck "Public Bot" in the discord developer portal to disable others from inviting it)
+And, for your own safety, make sure to uncheck "Public Bot" in the discord developer options, if you intend to use it on one server only.
+
+![](scr.png)
