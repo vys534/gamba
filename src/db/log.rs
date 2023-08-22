@@ -1,25 +1,28 @@
 use sqlx::{pool::PoolConnection, Sqlite};
 
 pub enum LogType {
-    Daily,
-    Talk,
+    Claim,
+    Passive,
     Gamble,
+    Manual,
 }
 
-pub async fn log_currency_change(
+pub async fn currency_change(
     author: u64,
-    in_credits: i64,
-    out_credits: i64,
+    by: i64,
     t: LogType,
     db_conn: &mut PoolConnection<Sqlite>,
 ) -> Result<(), crate::model::error::Error> {
-    sqlx::query("INSERT INTO log (user_id, ts, currency_in, currency_out, is_daily, is_talk) VALUES (?, ?, ?, ?, ?, ?)")
+    sqlx::query("INSERT INTO log (user_id, ts, type, by) VALUES (?, ?, ?, ?)")
         .bind(author as i64)
         .bind(chrono::Utc::now().timestamp())
-        .bind(in_credits)
-        .bind(out_credits)
-        .bind(match t { LogType::Daily => 1, _ => 0 })
-        .bind(match t { LogType::Talk => 1, _ => 0 })
+        .bind(match t {
+            LogType::Claim => 0,
+            LogType::Passive => 1,
+            LogType::Gamble => 2,
+            LogType::Manual => 99,
+        })
+        .bind(by)
         .execute(db_conn.as_mut())
         .await
         .map_err(crate::model::error::Error::Db)?;

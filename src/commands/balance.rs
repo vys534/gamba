@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use crate::db::currency::get_current;
 use crate::model::command;
 use serenity;
 use sqlx::Sqlite;
@@ -31,12 +30,12 @@ impl command::Command for BalanceCommand {
     ) -> Result<serenity::model::prelude::Message, crate::model::error::Error> {
         self.check_cooldown(redis_conn, &message.author.id).await?;
 
-        let bal = get_current(&message.author.id, &mut db_conn).await?;
+        let bal = crate::db::currency::current(&message.author.id, &mut db_conn).await?;
         message
             .channel_id
             .say(
                 &ctx,
-                format!("you currently have {}", crate::util::format_currency(bal),),
+                format!("You have {}", crate::util::format_currency(bal),),
             )
             .await
             .map_err(crate::model::error::Error::Serenity)

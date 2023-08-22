@@ -25,7 +25,7 @@ impl EventHandler for Handler {
         };
 
         if let Err(e) =
-            crate::db::on_message::handle(&m.author, self.redis.clone(), &mut db_conn).await
+            crate::db::passive::handle(&m.author, self.redis.clone(), &mut db_conn).await
         {
             handle_error(ctx, m, e, false).await;
             return;

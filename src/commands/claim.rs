@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use crate::db::currency::process_daily_claim;
 use crate::model::command;
 use serenity;
 use sqlx::Sqlite;
@@ -32,19 +31,19 @@ impl command::Command for ClaimCommand {
         self.check_cooldown(redis_conn, &message.author.id).await?;
 
         let (streak_old, streak_new, streak_best) =
-            process_daily_claim(&message.author.id, &mut db_conn).await?;
-        let now = crate::db::currency::get_current(&message.author.id, &mut db_conn).await?;
+            crate::db::claim::handle(&message.author.id, &mut db_conn).await?;
+        let now = crate::db::currency::current(&message.author.id, &mut db_conn).await?;
         let streak_clamp = if streak_new >= 7 { 6 } else { streak_new };
         message.channel_id.say(&ctx,
-            format!("Free money sir, you got {} + {} (Streak bonus!). Your now have {}\nCome back in 24 hours to claim again\nCurrent streak: {} -> **{}** (Record: {})\nNext bonus: {}", 
-                crate::util::format_currency(crate::db::currency::DAILY_STREAK_AMOUNT),
+            format!("Free money sir, you got {} + {} (Streak bonus!). You now have {}\nCome back in 24 hours to claim again\nCurrent streak: {} -> **{}** (Record: {})\nNext bonus: {}", 
+                crate::util::format_currency(crate::db::claim::DAILY_STREAK_AMOUNT),
                 // TODO: clamp function
-                crate::util::format_currency(crate::db::currency::DAILY_STREAK_BONUS_SCALE[streak_clamp as usize]),
+                crate::util::format_currency(crate::db::claim::DAILY_STREAK_BONUS_SCALE[streak_clamp as usize]),
                 crate::util::format_currency(now),
                 streak_old,
                 streak_new,
                 streak_best,
-                crate::util::format_currency(crate::db::currency::DAILY_STREAK_BONUS_SCALE[streak_clamp as usize]),
+                crate::util::format_currency(crate::db::claim::DAILY_STREAK_BONUS_SCALE[streak_clamp as usize]),
             ))
             .await
             .map_err(crate::model::error::Error::Serenity)

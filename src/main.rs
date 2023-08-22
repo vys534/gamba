@@ -7,7 +7,7 @@ mod model;
 mod util;
 
 const PREFIX: &str = "&";
-// replace with your discord user ID
+// replace with your discord user ID--not required, but without it you cannot manually change users' balance
 const OWNER_ID: u64 = 0;
 
 #[tokio::main]

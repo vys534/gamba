@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use sqlx::Sqlite;
 
-use crate::{db::currency::adjust_currency_amount, model::command, OWNER_ID};
+use crate::{model::command, OWNER_ID};
 
 pub struct SetBalanceCommand;
 
@@ -12,10 +12,10 @@ impl command::Command for SetBalanceCommand {
         command::CommandInfo {
             module: crate::model::module::Class::Core,
             name: "setbalance",
-            shorthand: "setbal",
+            shorthand: "sb",
             cooldown_length: 0,
-            description: "manually increase/decrease the balance of any user by X",
-            usage: "[user_id] [amount]",
+            description: "manually change the balance of any user",
+            usage: "[user_id] [amount +/-]",
             inner: Box::new(SetBalanceCommand),
         }
     }
@@ -38,7 +38,14 @@ impl command::Command for SetBalanceCommand {
             .map_err(|_e: std::num::ParseIntError| crate::model::error::Error::ParseInt)?;
         let by = str::parse::<i64>(args.0[1])
             .map_err(|_e: std::num::ParseIntError| crate::model::error::Error::ParseInt)?;
-        adjust_currency_amount(user_id, by, &mut db_conn).await?;
+        crate::db::currency::change_by(user_id, by, &mut db_conn).await?;
+        crate::db::log::currency_change(
+            message.author.id.0,
+            by,
+            crate::db::log::LogType::Manual,
+            &mut db_conn,
+        )
+        .await?;
         message
             .channel_id
             .say(&ctx, ":ok_hand:")

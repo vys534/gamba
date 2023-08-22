@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use crate::db::currency::adjust_currency_amount;
-use crate::db::currency::get_current;
 use crate::model::command;
 use rand::RngCore;
 use serenity;
@@ -15,30 +13,6 @@ pub const MAX_AMOUNT: i64 = 10_000_000_000;
 pub const SPENCER_ID: u64 = 439862794511450133;
 
 static GAMBLE_WHEELS: [[crate::model::icons::Icon; 28]; 3] = [
-    // [
-    //     crate::model::icons::Icon::Moosh,
-    //     crate::model::icons::Icon::Moosh,
-    //     crate::model::icons::Icon::Fabio,
-    //     crate::model::icons::Icon::Fabio,
-    //     crate::model::icons::Icon::Reaper,
-    //     crate::model::icons::Icon::Reaper,
-    //     crate::model::icons::Icon::TheDollar,
-    //     crate::model::icons::Icon::TheDollar,
-    //     crate::model::icons::Icon::TheDollar,
-    //     crate::model::icons::Icon::Troll,
-    //     crate::model::icons::Icon::Troll,
-    //     crate::model::icons::Icon::Troll,
-    //     crate::model::icons::Icon::Troll,
-    //     crate::model::icons::Icon::WhatsappSpencer,
-    //     crate::model::icons::Icon::WhatsappSpencer,
-    //     crate::model::icons::Icon::WhatsappSpencer,
-    //     crate::model::icons::Icon::Whatsapp,
-    //     crate::model::icons::Icon::Whatsapp,
-    //     crate::model::icons::Icon::WhatsappGold,
-    //     crate::model::icons::Icon::JointOLantern,
-    //     crate::model::icons::Icon::JointOLantern,
-
-    // ],
     [
         crate::model::icons::Icon::Whatsapp,
         crate::model::icons::Icon::Troll,
@@ -154,7 +128,7 @@ impl command::Command for GambleCommand {
         args: (Vec<&str>, HashMap<String, &str>),
     ) -> Result<serenity::model::prelude::Message, crate::model::error::Error> {
         self.check_cooldown(redis_conn, &message.author.id).await?;
-        let user_credits = get_current(&message.author.id, &mut db_conn).await?;
+        let user_credits = crate::db::currency::current(&message.author.id, &mut db_conn).await?;
 
         let amount_to_gamble: i64 = args
             .0
@@ -256,10 +230,9 @@ impl command::Command for GambleCommand {
         let payout = if dollar_event {
             1
         } else if spencer_event {
-            adjust_currency_amount(SPENCER_ID, original_payout, &mut db_conn).await?;
-            crate::db::log::log_currency_change(
+            crate::db::currency::change_by(SPENCER_ID, original_payout, &mut db_conn).await?;
+            crate::db::log::currency_change(
                 SPENCER_ID,
-                0,
                 original_payout,
                 crate::db::log::LogType::Gamble,
                 &mut db_conn,
@@ -271,17 +244,16 @@ impl command::Command for GambleCommand {
         };
 
         let diff = payout - amount_to_gamble;
-        adjust_currency_amount(message.author.id.0, diff, &mut db_conn).await?;
-        crate::db::log::log_currency_change(
+        crate::db::currency::change_by(message.author.id.0, diff, &mut db_conn).await?;
+        crate::db::log::currency_change(
             message.author.id.0,
-            amount_to_gamble,
-            payout,
+            diff,
             crate::db::log::LogType::Gamble,
             &mut db_conn,
         )
         .await?;
 
-        let new_balance = get_current(&message.author.id, &mut db_conn).await?;
+        let new_balance = crate::db::currency::current(&message.author.id, &mut db_conn).await?;
         let modifier = if dollar_event {
             crate::model::emoji::Emoji::TheDollar.to_string()
         } else if spencer_event {

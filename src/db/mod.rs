@@ -1,10 +1,11 @@
 use sqlx::{Pool, Sqlite};
 
+pub mod claim;
 pub mod connection;
 pub mod currency;
 pub mod leaderboard;
 pub mod log;
-pub mod on_message;
+pub mod passive;
 
 pub async fn setup(db: &mut Pool<Sqlite>) -> Result<(), crate::model::error::Error> {
     let mut db_conn = crate::db::connection::get_sqlite_connection(db).await?;
@@ -30,10 +31,8 @@ pub async fn setup(db: &mut Pool<Sqlite>) -> Result<(), crate::model::error::Err
         "CREATE TABLE IF NOT EXISTS log (
         user_id INTEGER NOT NULL,
         ts INTEGER NOT NULL,
-        currency_in INTEGER NOT NULL,
-        currency_out INTEGER NOT NULL,
-        is_daily INTEGER NOT NULL,
-        is_talk INTEGER NOT NULL
+        type INTEGER NOT NULL,
+        by_amount INTEGER NOT NULL
     )",
     )
     .execute(db_conn.as_mut())

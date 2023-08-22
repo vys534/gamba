@@ -1,5 +1,5 @@
 pub enum Emoji {
-    Cp,
+    Credits,
     EpicFail,
     Moosh,
     Fabio,
@@ -16,7 +16,7 @@ pub enum Emoji {
 impl std::fmt::Display for Emoji {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            Emoji::Cp => "<:points:1098027068152873092>",
+            Emoji::Credits => "<:points:1098027068152873092>",
             Emoji::EpicFail => "<:fail:1098060687101673552>",
             Emoji::Moosh => "<:moosher:1098433526141046825>",
             Emoji::Fabio => "<:fabio:1098433048518860800>",

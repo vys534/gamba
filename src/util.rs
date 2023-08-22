@@ -51,7 +51,7 @@ pub fn format_currency(amount: i64) -> String {
     format!(
         "**{}** {}",
         amount,
-        crate::model::emoji::Emoji::Cp.to_string()
+        crate::model::emoji::Emoji::Credits.to_string()
     )
 }
 

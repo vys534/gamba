@@ -2,8 +2,8 @@ use rand::Rng;
 use serenity::model::user::User;
 use sqlx::{pool::PoolConnection, Row, Sqlite};
 
-pub const MIN_CURRENCY_EARNED: usize = 8;
-pub const MAX_CURRENCY_EARNED: usize = 10;
+pub const MIN_CURRENCY_EARNED: usize = 16;
+pub const MAX_CURRENCY_EARNED: usize = 20;
 pub const TALK_INTERVAL: usize = 60;
 
 pub async fn handle(
@@ -57,17 +57,11 @@ pub async fn handle(
 
         let social_credits_earned: usize =
             rand::thread_rng().gen_range(MIN_CURRENCY_EARNED..=MAX_CURRENCY_EARNED);
-        crate::db::currency::adjust_currency_amount(
+        crate::db::currency::change_by(author.id.0, social_credits_earned as i64, db_conn).await?;
+        crate::db::log::currency_change(
             author.id.0,
             social_credits_earned as i64,
-            db_conn,
-        )
-        .await?;
-        crate::db::log::log_currency_change(
-            author.id.0,
-            0,
-            social_credits_earned as i64,
-            super::log::LogType::Talk,
+            super::log::LogType::Passive,
             db_conn,
         )
         .await?;
