@@ -23,7 +23,7 @@ async fn main() {
         .max_connections(5)
         .connect_with(
             sqlx::sqlite::SqliteConnectOptions::new()
-                .filename("./db/data.sqlite")
+                .filename("./data.sqlite")
                 .create_if_missing(true),
         )
         .await
