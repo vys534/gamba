@@ -32,7 +32,7 @@ pub async fn setup(db: &mut Pool<Sqlite>) -> Result<(), crate::model::error::Err
         user_id INTEGER NOT NULL,
         ts INTEGER NOT NULL,
         type INTEGER NOT NULL,
-        by_amount INTEGER NOT NULL
+        by INTEGER NOT NULL
     )",
     )
     .execute(db_conn.as_mut())
