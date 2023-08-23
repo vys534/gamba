@@ -7,7 +7,7 @@ use sqlx::Sqlite;
 
 pub struct GambleCommand;
 
-pub const DEFAULT_AMOUNT: i64 = 10;
+pub const MIN_AMOUNT: i64 = 10;
 pub const MAX_AMOUNT: i64 = 10_000_000_000;
 
 pub const SPENCER_ID: u64 = 439862794511450133;
@@ -132,7 +132,7 @@ impl command::Command for GambleCommand {
 
         let amount_to_gamble: i64 = args
             .0
-            .get(0)
+            .first()
             .map(|&arg| match arg {
                 "all" => user_credits,
                 _ => {
@@ -146,11 +146,14 @@ impl command::Command for GambleCommand {
                     value
                         .parse::<i64>()
                         .map(|value| value * multiplier)
-                        .unwrap_or_else(|_| DEFAULT_AMOUNT)
+                        .unwrap_or_else(|_| MIN_AMOUNT)
                 }
             })
-            .unwrap_or(DEFAULT_AMOUNT)
-            .min(MAX_AMOUNT);
+            .unwrap_or(MIN_AMOUNT);
+
+        if !(MIN_AMOUNT..=MAX_AMOUNT).contains(&amount_to_gamble) {
+            return Err(crate::model::error::Error::OutOfBounds);
+        }
 
         if user_credits < amount_to_gamble {
             return Err(crate::model::error::Error::Broke(
