@@ -2,8 +2,8 @@ use crate::model::emoji::Emoji;
 
 pub enum Icon {
     Moosh,
-    Fabio,
-    Reaper,
+    Reddit,
+    Discord,
     Troll,
     WhatsappSpencer,
     Whatsapp,
@@ -16,8 +16,8 @@ impl Icon {
     pub fn emoji(&self) -> Emoji {
         match self {
             Icon::Moosh => Emoji::Moosh,
-            Icon::Fabio => Emoji::Fabio,
-            Icon::Reaper => Emoji::Reaper,
+            Icon::Reddit => Emoji::Reddit,
+            Icon::Discord => Emoji::Discord,
             Icon::Troll => Emoji::Troll,
             Icon::WhatsappSpencer => Emoji::WhatsappSpencer,
             Icon::Whatsapp => Emoji::Whatsapp,
@@ -29,8 +29,8 @@ impl Icon {
     pub fn name(&self) -> &'static str {
         match self {
             Icon::Moosh => "Moosh",
-            Icon::Fabio => "Fabio",
-            Icon::Reaper => "Reaper",
+            Icon::Reddit => "Reddit",
+            Icon::Discord => "Discord",
             Icon::Troll => "Troll",
             Icon::WhatsappSpencer => "Whatsapp Spencer",
             Icon::Whatsapp => "Whatsapp",
@@ -43,8 +43,8 @@ impl Icon {
     pub fn match_data(&self) -> (f64, f64) {
         match self {
             Icon::Moosh => (0.0, 0.0),
-            Icon::Fabio => (0.1, 0.5),
-            Icon::Reaper => (0.2, 1.0),
+            Icon::Reddit => (0.1, 0.5),
+            Icon::Discord => (0.2, 1.0),
             Icon::TheDollar => (0.3, 0.0),
             Icon::Troll => (0.4, 1.8),
             Icon::WhatsappSpencer => (0.5, 0.0),
